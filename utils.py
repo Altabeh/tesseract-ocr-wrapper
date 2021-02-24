@@ -1,6 +1,5 @@
 
 import concurrent.futures as future
-from datetime import datetime, timedelta
 from os import cpu_count
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, Popen, check_output
@@ -12,8 +11,6 @@ from pdf2image import convert_from_path
 from tesseract import Tesseract
 
 __all__ = [
-    "get_tesseract_text",
-    "backward_range_spit",
     "pdf_to_text",
     "ocr_to_text",
     "get_page_count",
@@ -23,7 +20,7 @@ TESS = Tesseract()
 
 def pdf_to_text(pdf_path, target_dir):
     """
-    Convert pdf at `pdf_path` to a txt file in `target_dir` using xpdf.
+    Convert pdf at `pdf_path` to a txt file in `target_dir` using XpdfReader's pdftotext.
     """
     file_name = Path(pdf_path).stem
     command = [
@@ -40,7 +37,7 @@ def pdf_to_text(pdf_path, target_dir):
     return ""
 
 
-def get_tesseract_text(img_path, **kwargs):
+def _get_tesseract_text(img_path, **kwargs):
     """
     Use tesseract api to get the text from the images directly.
 
@@ -57,11 +54,11 @@ def get_tesseract_text(img_path, **kwargs):
     return gettext
 
 
-def wrap_get_tesseract_text(img_path, kwargs):
+def _wrap_get_tesseract_text(img_path, kwargs):
     """
     A wrapper for `get_tesseract_text` to be used in multiprocessing/concurrency.
     """
-    return get_tesseract_text(img_path, **kwargs)
+    return _get_tesseract_text(img_path, **kwargs)
 
 
 def ocr_to_text(pdf_path, batch_size=10, **kwargs):
@@ -96,7 +93,7 @@ def ocr_to_text(pdf_path, batch_size=10, **kwargs):
 
             with future.ProcessPoolExecutor(max_workers=cpus) as executor:
                 tasks = {
-                    executor.submit(wrap_get_tesseract_text, page, kwargs): i
+                    executor.submit(_wrap_get_tesseract_text, page, kwargs): i
                     + 1
                     + iter_ * batch_size
                     for i, page in enumerate(path_to_pages)
@@ -113,7 +110,7 @@ def ocr_to_text(pdf_path, batch_size=10, **kwargs):
 
 def get_page_count(pdf_path):
     """
-    Use xpdf's pdfinfo to extract the number of pages in a pdf file.
+    Use XpdfReader's pdfinfo to extract the number of pages in a pdf file.
     """
     try:
         output = check_output(["pdfinfo", pdf_path]).decode()
