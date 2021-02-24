@@ -25,19 +25,11 @@ After cloning the repo, go to the directory `tesseract-ocr-wrapper` and then typ
 $ pip install -r requirements.txt
 ```
 to download and install the required python packages. There are many other packages such as `leptonica` and `pdftotext` that need to be installed.
-Since these packages are system dependent, I have included an example `_sys.py` file that allows you 
-to directly download and install them for Linux. For all other operating systems, you can modify this file, in particular the commands listed in `_sys.py` i.e.
+Since these packages are system dependent, I have included a `_sys.py` file that allows you 
+to directly download and install them if you are on Linux. For all other operating systems, you can modify this file, in particular the commands listed in `_sys.py` i.e.
 
 ```
 commands = [
-            "cd /tmp",
-            "wget https://chromedriver.storage.googleapis.com/2.37/chromedriver_linux64.zip",
-            "unzip chromedriver_linux64.zip",
-            "sudo mv chromedriver /usr/bin/chromedriver",
-            "chromedriver --version",
-            "curl https://intoli.com/install-google-chrome.sh | bash",
-            "sudo mv /usr/bin/google-chrome-stable /usr/bin/google-chrome",
-            "google-chrome --version && which google-chrome",
             "sudo yum install poppler-utils",
             "sudo yum install autoconf automake libpng-devel libtiff-devel libtool pkgconfig.x86_64 libpng12-devel.x86_64 libjpeg-devel libtiff-devel.x86_64 zlib-devel.x86_64",
             "cd /tmp",
@@ -65,4 +57,4 @@ commands = [
             f"cd {current_dir}",
         ]
 ```
-and then simply use the command `$ python _sys.py` in the terminal. 
+and then simply enter `$ python _sys.py` in the terminal. 
