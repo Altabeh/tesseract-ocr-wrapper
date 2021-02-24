@@ -25,14 +25,6 @@ if not os.environ.get("OMP_THREAD_LIMIT"):
     commands = []
     if system() == "Linux":
         commands = [
-            "cd /tmp",
-            "wget https://chromedriver.storage.googleapis.com/2.37/chromedriver_linux64.zip",
-            "unzip chromedriver_linux64.zip",
-            "sudo mv chromedriver /usr/bin/chromedriver",
-            "chromedriver --version",
-            "curl https://intoli.com/install-google-chrome.sh | bash",
-            "sudo mv /usr/bin/google-chrome-stable /usr/bin/google-chrome",
-            "google-chrome --version && which google-chrome",
             "sudo yum install poppler-utils",
             "sudo yum install autoconf automake libpng-devel libtiff-devel libtool pkgconfig.x86_64 libpng12-devel.x86_64 libjpeg-devel libtiff-devel.x86_64 zlib-devel.x86_64",
             "cd /tmp",
