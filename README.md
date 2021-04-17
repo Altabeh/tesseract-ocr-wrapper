@@ -24,7 +24,7 @@ After cloning the repo, go to the directory `tesseract-ocr-wrapper` and then typ
 ```
 $ pip install -r requirements.txt
 ```
-to download and install the required python packages. There are many other packages such as `leptonica` and `pdftotext` that need to be installed.
+to download and install the required python packages. There are many other packages such as [leptonica](https://github.com/DanBloomberg/leptonica) and [poppler-utils](https://www.mankier.com/package/poppler-utils) that need to be installed.
 Since these packages are system dependent, I have included a `_sys.py` file that allows you 
 to directly download and install them if you are on Linux. For all other operating systems, you can modify this file, in particular the commands listed in `_sys.py` i.e.
 
