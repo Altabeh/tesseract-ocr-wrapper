@@ -1,6 +1,5 @@
-
 import concurrent.futures as future
-from os import cpu_count
+import os
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 from tempfile import TemporaryDirectory
@@ -8,7 +7,7 @@ from tempfile import TemporaryDirectory
 from cv2 import cv2
 from pdf2image import convert_from_path
 
-from tesseract import Tesseract
+from tesseract import Tesseract, PageSegMode
 
 __all__ = [
     "pdf_to_text",
@@ -18,7 +17,7 @@ __all__ = [
 
 TESS = Tesseract()
 
-def pdf_to_text(pdf_path, target_dir):
+def pdf_to_text(pdf_path:str , target_dir: str):
     """
     Convert pdf at `pdf_path` to a txt file in `target_dir` using XpdfReader's pdftotext.
     """
@@ -37,31 +36,35 @@ def pdf_to_text(pdf_path, target_dir):
     return ""
 
 
-def _get_tesseract_text(img_path, **kwargs):
+def _get_tesseract_text(img_path: str, **kwargs):
     """
-    Use tesseract api to get the text from the images directly.
+    Use Tesseract API to get the text from the images directly.
 
     Keywords
     --------
-    A dictionary of key, val that tesseract api can accept.
+    A dictionary of key, val that Tesseract API can accept.
     """
-    imcv = cv2.imread(img_path)
-    height, width, depth = imcv.shape
+    grayscale = kwargs.get("grayscale", False)
+    psm = int(kwargs.get("psm", PageSegMode.AUTO))
+    imcv = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE if grayscale else cv2.IMREAD_COLOR)
     for key, val in kwargs.items():
-        TESS.set_variable(key, val)
+        TESS.set_variable(key, str(val))
+    TESS.set_psm(psm)
+    height, width, *rest = imcv.shape
+    depth = (rest or [1])[0]
     TESS.set_image(imcv.ctypes, width, height, depth)
     gettext = TESS.get_text()
     return gettext
 
 
-def _wrap_get_tesseract_text(img_path, kwargs):
+def _wrap_get_tesseract_text(img_path: str, kwargs):
     """
     A wrapper for `get_tesseract_text` to be used in multiprocessing/concurrency.
     """
     return _get_tesseract_text(img_path, **kwargs)
 
 
-def ocr_to_text(pdf_path, batch_size=10, **kwargs):
+def ocr_to_text(pdf_path: str, batch_size: int=10, first_page: int=1, last_page: int=0, **kwargs):
     """
     Convert ocr to text using path2image, cv2 and tesseract api.
     `kwargs` belong to the function `get_tesseract_text`.
@@ -72,14 +75,16 @@ def ocr_to_text(pdf_path, batch_size=10, **kwargs):
     :param batch_size: ---> int: size of batches of converted pages
                                  fed into `get_tesseract_text`.
     """
-    resolution = kwargs.get("user_defined_dpi", "250")
-    page_count = get_page_count(pdf_path)
-    cpus = cpu_count()
+    resolution = kwargs.get("user_defined_dpi", 250)
+    grayscale = kwargs.get("grayscale", False)
+    if last_page <= 0:
+        last_page = get_page_count(pdf_path) + last_page
+    cpus = os.cpu_count()
     # To use up all cpus
     if cpus > batch_size:
         batch_size = cpus
     iter_ = 0
-    for page in range(1, page_count + 1, batch_size):
+    for page in range(first_page, last_page + 1, batch_size):
         with TemporaryDirectory() as path:
             path_to_pages = convert_from_path(
                 pdf_path,
@@ -87,8 +92,9 @@ def ocr_to_text(pdf_path, batch_size=10, **kwargs):
                 fmt="tiff",
                 dpi=int(resolution),
                 first_page=page,
-                last_page=min(page + batch_size - 1, page_count),
+                last_page=min(page + batch_size - 1, last_page),
                 paths_only=True,
+                grayscale=bool(grayscale),
             )
 
             with future.ProcessPoolExecutor(max_workers=cpus) as executor:
@@ -108,7 +114,7 @@ def ocr_to_text(pdf_path, batch_size=10, **kwargs):
         iter_ += 1
 
 
-def get_page_count(pdf_path):
+def get_page_count(pdf_path: str):
     """
     Use XpdfReader's pdfinfo to extract the number of pages in a pdf file.
     """
@@ -117,6 +123,5 @@ def get_page_count(pdf_path):
         pages_line = [line for line in output.splitlines() if "Pages:" in line][0]
         num_pages = int(pages_line.split(":")[1])
         return num_pages
-
     except (CalledProcessError, UnicodeDecodeError):
         return 0
