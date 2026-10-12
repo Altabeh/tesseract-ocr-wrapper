@@ -4,7 +4,7 @@ from pathlib import Path
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 from tempfile import TemporaryDirectory
 
-from cv2 import cv2
+import cv2
 from pdf2image import convert_from_path
 
 from tesseract import Tesseract, PageSegMode
