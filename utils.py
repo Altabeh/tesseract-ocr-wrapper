@@ -1,4 +1,5 @@
 import concurrent.futures as future
+import multiprocessing
 import os
 import sys
 from pathlib import Path
@@ -17,6 +18,12 @@ __all__ = [
 ]
 
 TESS = Tesseract()
+
+# OpenCV and Tesseract start threads on import, so forking this process can
+# deadlock the workers.
+MP_CONTEXT = multiprocessing.get_context(
+    "forkserver" if "forkserver" in multiprocessing.get_all_start_methods() else "spawn"
+)
 
 def pdf_to_text(pdf_path:str , target_dir: str):
     """
@@ -98,7 +105,7 @@ def ocr_to_text(pdf_path: str, batch_size: int=10, first_page: int=1, last_page:
                 grayscale=bool(grayscale),
             )
 
-            with future.ProcessPoolExecutor(max_workers=cpus) as executor:
+            with future.ProcessPoolExecutor(max_workers=cpus, mp_context=MP_CONTEXT) as executor:
                 tasks = {
                     executor.submit(_wrap_get_tesseract_text, page, kwargs): i
                     + 1

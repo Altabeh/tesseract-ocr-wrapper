@@ -32,6 +32,7 @@ docker run --rm -v "$PWD:/data" tesseract-ocr-wrapper scan.pdf
   - [Extract embedded text without OCR](#extract-embedded-text-without-ocr)
   - [Use the Tesseract API directly](#use-the-tesseract-api-directly)
 - [API reference](#api-reference)
+- [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 
@@ -292,6 +293,31 @@ Returns the number of pages reported by `pdfinfo`, or `0` if it can't be read.
 | 11 | `SPARSE_TEXT` | As much text as possible, in no particular order |
 | 12 | `SPARSE_TEXT_OSD` | Sparse text with OSD |
 | 13 | `RAW_LINE` | A single text line, bypassing Tesseract-specific hacks |
+
+## Testing
+
+The tests live in `tests/` and use [pytest](https://docs.pytest.org/):
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
+
+| File | Covers |
+| --- | --- |
+| `tests/test_sys.py` | Platform detection and the commands the installer generates for Debian, RHEL, and pip (dry run, nothing is installed) |
+| `tests/test_tesseract.py` | The `ctypes` wrapper: page segmentation modes, error handling, recognizing text in an image |
+| `tests/test_utils.py` | `ocr_to_text`, `get_page_count` and `pdf_to_text` against a generated two-page PDF |
+| `tests/test_ocr_cli.py` | Argument parsing and the end-to-end CLI output |
+
+Tests marked `integration` need `libtesseract` and Poppler. If those aren't installed, the integration tests are skipped automatically and everything else still runs. Use `pytest -m "not integration"` to run only the fast unit tests.
+
+To run the full suite in either Docker image without installing anything locally:
+
+```bash
+docker run --rm -v "$PWD:/repo" -w /repo --entrypoint sh tesseract-ocr-wrapper \
+  -c "pip install -q pytest && python -m pytest"
+```
 
 ## Troubleshooting
 

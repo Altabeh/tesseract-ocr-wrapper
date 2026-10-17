@@ -55,6 +55,9 @@ def main(argv=None):
         help="set a Tesseract variable (repeatable)",
     )
     args = parser.parse_args(argv)
+    for pdf in args.pdfs:
+        if not pdf.is_file():
+            parser.error(f"no such file: {pdf}")
 
     from utils import ocr_to_text
 
@@ -65,8 +68,6 @@ def main(argv=None):
         args.output_dir.mkdir(parents=True, exist_ok=True)
 
     for pdf in args.pdfs:
-        if not pdf.is_file():
-            parser.error(f"no such file: {pdf}")
         pages = sorted(
             ocr_to_text(str(pdf), first_page=args.first_page, last_page=args.last_page, **options),
             key=lambda page: page[1],
