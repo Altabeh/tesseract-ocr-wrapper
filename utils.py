@@ -1,10 +1,11 @@
 import concurrent.futures as future
 import os
+import sys
 from pathlib import Path
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 from tempfile import TemporaryDirectory
 
-from cv2 import cv2
+import cv2
 from pdf2image import convert_from_path
 
 from tesseract import Tesseract, PageSegMode
@@ -110,7 +111,7 @@ def ocr_to_text(pdf_path: str, batch_size: int=10, first_page: int=1, last_page:
                         data = f.result(), page_number
                         yield data
                     except Exception as e:
-                        print(f"page #{page_number} generated an exception: {e}")
+                        print(f"page #{page_number} generated an exception: {e}", file=sys.stderr)
         iter_ += 1
 
 

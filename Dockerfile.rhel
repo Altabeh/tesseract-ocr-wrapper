@@ -1,0 +1,42 @@
+# RHEL 9 (Red Hat Universal Base Image) image: Leptonica and Tesseract are
+# compiled from source in a build stage, so the final image has no toolchain.
+# UBI images are freely redistributable and need no Red Hat subscription.
+#
+#   docker build -f Dockerfile.rhel -t tesseract-ocr-wrapper:rhel .
+#   docker run --rm -v "$PWD:/data" tesseract-ocr-wrapper:rhel scan.pdf
+
+ARG UBI_IMAGE=registry.access.redhat.com/ubi9/ubi
+
+FROM ${UBI_IMAGE} AS build
+COPY _sys.py requirements.txt /src/
+RUN python3 /src/_sys.py --skip-pip \
+    && rm -rf /usr/local/include /usr/local/lib/pkgconfig \
+              /usr/local/lib/*.a /usr/local/lib/*.la
+
+
+FROM ${UBI_IMAGE}
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN dnf install -y --setopt=install_weak_deps=False \
+        python3.12 python3.12-pip poppler-utils \
+        libgomp libstdc++ libpng libjpeg-turbo libtiff libwebp zlib \
+    && dnf clean all
+
+COPY --from=build /usr/local /usr/local
+COPY --from=build /etc/ld.so.conf.d/usr-local-lib.conf /etc/ld.so.conf.d/
+RUN ldconfig
+
+WORKDIR /app
+COPY _sys.py requirements.txt ./
+RUN python3.12 -m venv /opt/venv \
+    && /opt/venv/bin/python _sys.py --skip-system
+ENV PATH=/opt/venv/bin:$PATH
+
+COPY tesseract.py utils.py ocr.py ./
+
+WORKDIR /data
+ENTRYPOINT ["python", "/app/ocr.py"]

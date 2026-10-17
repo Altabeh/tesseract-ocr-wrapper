@@ -4,9 +4,14 @@ A tesseract python wrapper that calls tesseract library under the hood.
 
 import ctypes
 import ctypes.util
+import os
 from enum import IntEnum
 
-__all__ = ["Tesseract", "TesseractError"]
+__all__ = ["Tesseract", "TesseractError", "PageSegMode"]
+
+# Tesseract's internal OpenMP threading slows things down when pages are already
+# processed in parallel. Must be set before the library is loaded.
+os.environ.setdefault("OMP_THREAD_LIMIT", "1")
 
 LIBNAME = "tesseract"
 
@@ -14,23 +19,23 @@ class PageSegMode(IntEnum):
     """
     Enum for page segmentation mode.
     """
-    OSD_ONLY = 0,      # Orientation and script detection only.
-    AUTO_OSD = 1,      # Automatic page segmentation with orientation and
-                       # script detection. (OSD)
-    AUTO_ONLY = 2,     # Automatic page segmentation, but no OSD, or OCR.
-    AUTO = 3,          # Fully automatic page segmentation, but no OSD.
-    SINGLE_COLUMN = 4, # Assume a single column of text of variable sizes.
-    SINGLE_BLOCK_VERT_TEXT = 5, # Assume a single uniform block of
+    OSD_ONLY = 0                # Orientation and script detection only.
+    AUTO_OSD = 1                # Automatic page segmentation with orientation and
+                                # script detection. (OSD)
+    AUTO_ONLY = 2               # Automatic page segmentation, but no OSD, or OCR.
+    AUTO = 3                    # Fully automatic page segmentation, but no OSD.
+    SINGLE_COLUMN = 4           # Assume a single column of text of variable sizes.
+    SINGLE_BLOCK_VERT_TEXT = 5  # Assume a single uniform block of
                                 # vertically aligned text.
-    SINGLE_BLOCK = 6, # Assume a single uniform block of text. (Default.)
-    SINGLE_LINE = 7,  # Treat the image as a single text line.
-    SINGLE_WORD = 8,  # Treat the image as a single word.
-    CIRCLE_WORD = 9,  # Treat the image as a single word in a circle.
-    SINGLE_CHAR = 10, # Treat the image as a single character.
-    SPARSE_TEXT = 11, # Find as much text as possible in no particular order.
-    SPARSE_TEXT_OSD = 12, # Sparse text with orientation and script det.
-    RAW_LINE = 13, # Treat the image as a single text line, bypassing
-                   # hacks that are Tesseract-specific.
+    SINGLE_BLOCK = 6            # Assume a single uniform block of text. (Default.)
+    SINGLE_LINE = 7             # Treat the image as a single text line.
+    SINGLE_WORD = 8             # Treat the image as a single word.
+    CIRCLE_WORD = 9             # Treat the image as a single word in a circle.
+    SINGLE_CHAR = 10            # Treat the image as a single character.
+    SPARSE_TEXT = 11            # Find as much text as possible in no particular order.
+    SPARSE_TEXT_OSD = 12        # Sparse text with orientation and script det.
+    RAW_LINE = 13               # Treat the image as a single text line, bypassing
+                                # hacks that are Tesseract-specific.
 
 def to_char_p(string: str):
     """Convert to ctypes pointer"""
@@ -76,7 +81,7 @@ class Tesseract(object):
                 raise TesseractError(f"{LIBNAME} library was not found")
         cls._lib = lib = ctypes.CDLL(lib_path)
 
-        # Visit https://github.com/tesseract-ocr/tesseract/blob/master/include/tesseract/capi.h
+        # Visit https://github.com/tesseract-ocr/tesseract/blob/main/include/tesseract/capi.h
         # to see what methods are available in the tesseract api and their arguments and type declarations.
 
         lib.TessBaseAPICreate.restype = cls.TessBaseAPI
@@ -198,5 +203,4 @@ class Tesseract(object):
         utf8-decode text returned by the method `get_utf8_text`.
         """
         utf8_text = self.get_utf8_text()
-        if utf8_text:
-            return utf8_text.decode("utf-8")
+        return utf8_text.decode("utf-8") if utf8_text else ""
